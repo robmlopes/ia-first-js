@@ -1,6 +1,6 @@
 {
   "name": "ia-first-js",
-  "version": "1.0.2",
+  "version": "1.0.1",
   "description": "AI-first framework for JavaScript and TypeScript: contracts, effects and structured feedback for coding agents",
   "main": "./src/index.js",
   "scripts": {
