@@ -9,10 +9,12 @@ import { loadConfig } from './config.js';
 import { readLast, stats } from './history.js';
 import { check } from './pipeline.js';
 import { saveIndex } from './indexer.js';
+import { fixStyle } from './style.js';
+import { runFuzz, reportFuzz } from './fuzz.js';
 
 /** Every command of the framework; later phases implement the rest. */
 export const COMMANDS = ['check', 'index', 'patch', 'fix', 'intent', 'agents', 'fuzz', 'init', 'status', 'stats', 'docs', 'upgrade'];
-const IMPLEMENTED = new Set(['check', 'status', 'stats', 'index']);
+const IMPLEMENTED = new Set(['check', 'status', 'stats', 'index', 'fix', 'fuzz']);
 
 const HELP = `aif - AI-first framework for JavaScript and TypeScript
 
@@ -28,6 +30,7 @@ Exit codes: 0 ok, 1 check failed, 2 usage error or unimplemented command, 3 chec
 const OPTIONS = {
   json: { type: 'boolean' },
   changed: { type: 'boolean' },
+  report: { type: 'boolean' },
   root: { type: 'string', default: '.' },
   help: { type: 'boolean', short: 'h' },
 };
@@ -93,6 +96,32 @@ export async function main(argv, io) {
     saveIndex(root, loadConfig(root));
     io.stdout('index written to .aif/index.json\n');
     return 0;
+  }
+  if (command === 'fix') {
+    const res = fixStyle(root, loadConfig(root));
+    if (res.ok) {
+      io.stdout('all files formatted canonically\n');
+      return 0;
+    }
+    printCheck(io, { ok: false, errors: res.errors, warnings: [], timings: { total: 0 } });
+    return 1;
+  }
+  if (command === 'fuzz') {
+    const cfg = loadConfig(root);
+    if (positionals.includes('--report') || values.report) {
+      const rep = await reportFuzz(root, cfg);
+      printJson(io, rep);
+      return rep.ok ? 0 : 1;
+    }
+    const res = await runFuzz(root, cfg, true);
+    if (values.json) {
+      printJson(io, { ok: res.errors.length === 0, errors: res.errors, tested: res.tested });
+    } else if (res.errors.length === 0) {
+      io.stdout(`fuzz passed: ${res.tested.length} function(s) tested\n`);
+    } else {
+      printCheck(io, { ok: false, errors: res.errors, warnings: [], timings: { total: 0 } });
+    }
+    return res.errors.length === 0 ? 0 : 1;
   }
 
   const result = await check(root, { changed: values.changed });

@@ -60,20 +60,27 @@ function checkContractWrapper(call) {
   let outer = call;
   let effects = [];
   let hasContract = false;
+  let hasEnsures = false;
 
   // Pattern: contract({ effects: [...] })(fn)
   if (ts.isCallExpression(outer.expression)) {
     const innerCall = outer.expression;
-    if (ts.isIdentifier(innerCall.expression) && innerCall.expression.text === 'contract') {
+    const innerName = innerCall.expression.getText();
+    if (innerName === 'contract' || innerName.endsWith('.contract')) {
       hasContract = true;
       if (innerCall.arguments.length > 0 && ts.isObjectLiteralExpression(innerCall.arguments[0])) {
         const obj = innerCall.arguments[0];
         for (const prop of obj.properties) {
-          if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name) && prop.name.text === 'effects') {
-            if (ts.isArrayLiteralExpression(prop.initializer)) {
-              effects = prop.initializer.elements
-                .filter(ts.isStringLiteral)
-                .map((el) => el.text);
+          if (ts.isPropertyAssignment(prop)) {
+            const pName = prop.name.getText();
+            if (pName === 'ensures') {
+              hasEnsures = true;
+            } else if (pName === 'effects') {
+              if (ts.isArrayLiteralExpression(prop.initializer)) {
+                effects = prop.initializer.elements
+                  .filter(ts.isStringLiteral)
+                  .map((el) => el.text);
+              }
             }
           }
         }
@@ -81,7 +88,7 @@ function checkContractWrapper(call) {
     }
   }
 
-  return { hasContract, effects };
+  return { hasContract, hasEnsures, effects };
 }
 
 /**
@@ -128,11 +135,13 @@ export function parseSource(filePath, code) {
   function processFunction(node, name, isExported, docNode = node, contractNode = null) {
     const jsdoc = extractJsDoc(code, docNode.getFullStart());
     let hasContract = false;
+    let hasEnsures = false;
     let contractEffects = [];
 
     if (contractNode && ts.isCallExpression(contractNode)) {
       const contractInfo = checkContractWrapper(contractNode);
       hasContract = contractInfo.hasContract;
+      hasEnsures = contractInfo.hasEnsures;
       contractEffects = contractInfo.effects;
     }
 
@@ -164,6 +173,7 @@ export function parseSource(filePath, code) {
       returnType: returnType || null,
       doc: jsdoc.doc,
       hasContract,
+      hasEnsures,
       contractEffects,
     });
   }

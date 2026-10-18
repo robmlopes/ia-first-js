@@ -18,12 +18,21 @@ export * from './limits.js';
 export * from './model.js';
 export * from './lint.js';
 export * from './effects.js';
+export * from './style.js';
+export * from './types.js';
+export * from './bounds.js';
+export * from './cache.js';
+export * from './fuzzreport.js';
+export * from './fuzz.js';
 export {
   runStages,
   testsStage,
   indexStage,
+  styleStage,
   lintStage,
   effectsStage,
+  typesStage,
+  fuzzStage,
   changedFiles,
   defaultStages,
   check,

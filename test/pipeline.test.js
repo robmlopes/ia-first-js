@@ -133,7 +133,7 @@ test('changedFiles returns null outside a git repository', async () => {
 test('check pipeline stops at lint stage when lint fails before tests', async () => {
   const files = {
     'aif.config.json': JSON.stringify({ sourceDirs: ['domain'], pureDirs: ['domain'] }),
-    'domain/bad.js': 'export function impure() {}', // AIF002: public function in pure module without contract
+    'domain/bad.js': 'export function impure() {}\n', // AIF002: public function in pure module without contract
     'test/failing.test.js': "import { test } from 'node:test';\ntest('fails', () => { throw new Error('fail'); });\n",
   };
 
@@ -151,17 +151,10 @@ test('check pipeline stops at lint stage when lint fails before tests', async ()
 });
 
 test('check pipeline passes cleanly across all stages when code is compliant', async () => {
+  const contractPath = join(process.cwd(), 'src', 'contract.js');
   const files = {
     'aif.config.json': JSON.stringify({ sourceDirs: ['domain'], pureDirs: ['domain'] }),
-    'domain/pure.js': `
-      /**
-       * @param {number} x
-       * @returns {number}
-       */
-      export const compute = contract({
-        effects: [],
-      })(function compute(x) { return x * 2; });
-    `,
+    'domain/pure.js': `import { contract } from '${contractPath}';\n/**\n * @param {number} x\n * @returns {number}\n */\nexport const compute = contract({\n  effects: [],\n})(function compute(x) { return x * 2; });\n`,
     'test/ok.test.js': "import { test } from 'node:test';\ntest('ok', () => {});\n",
   };
 
@@ -170,8 +163,11 @@ test('check pipeline passes cleanly across all stages when code is compliant', a
     assert.equal(result.ok, true);
     assert.deepEqual(result.errors, []);
     assert.ok(result.timings.index !== undefined);
+    assert.ok(result.timings.style !== undefined);
     assert.ok(result.timings.lint !== undefined);
     assert.ok(result.timings.effects !== undefined);
+    assert.ok(result.timings.types !== undefined);
+    assert.ok(result.timings.fuzz !== undefined);
     assert.ok(result.timings.tests !== undefined);
   });
 });

@@ -13,8 +13,11 @@ import { readLast, record, writeLast } from './history.js';
 import { getWarnings, checkFileLimits } from './limits.js';
 import { saveIndex, findSourceFiles } from './indexer.js';
 import { parseSource } from './parser.js';
+import { checkStyle } from './style.js';
 import { runLint } from './lint.js';
 import { runEffects } from './effects.js';
+import { runTypeCheck } from './types.js';
+import { runFuzz } from './fuzz.js';
 
 /**
  * @typedef {Record<string, any>} StageError
@@ -137,6 +140,12 @@ export const indexStage = {
 };
 
 /** @type {Stage} */
+export const styleStage = {
+  name: 'style',
+  run: ({ root, config, only }) => checkStyle(root, config, only),
+};
+
+/** @type {Stage} */
 export const lintStage = {
   name: 'lint',
   run: ({ root, config, only }) => {
@@ -163,11 +172,29 @@ export const effectsStage = {
   run: ({ root, config }) => runEffects(root, config),
 };
 
+/** @type {Stage} */
+export const typesStage = {
+  name: 'types',
+  run: ({ root, config }) => runTypeCheck(root, config),
+};
+
+/** @type {Stage} */
+export const fuzzStage = {
+  name: 'fuzz',
+  run: async ({ root, config }) => {
+    const { errors } = await runFuzz(root, config, true);
+    return errors;
+  },
+};
+
 /** @type {Stage[]} */
 export const defaultStages = [
   indexStage,
+  styleStage,
   lintStage,
   effectsStage,
+  typesStage,
+  fuzzStage,
   { name: 'tests', run: testsStage },
 ];
 

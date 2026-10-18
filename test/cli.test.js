@@ -104,8 +104,24 @@ test('stats reads the history', async () => {
   });
 });
 
+test('fuzz runs contract fuzzing and supports --report', async () => {
+  const contractPath = join(process.cwd(), 'src', 'contract.js');
+  const files = {
+    'aif.config.json': JSON.stringify({ sourceDirs: ['domain'] }),
+    'domain/calc.js': `import { contract } from '${contractPath}';\nexport const add = contract({ ensures: (r, { a, b }) => r === a + b })(function add(a, b) { return a + b; });\n`,
+  };
+  await withProject(files, async (root) => {
+    const { io, out } = capture();
+    const code = await main(['fuzz', '--report', '--root', root], io);
+    assert.equal(code, 0);
+    const parsed = JSON.parse(out.join(''));
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.summary.functions_fuzzed, 1);
+  });
+});
+
 test('commands from later phases fail explicitly (stage cli, no rule) and exit 2', async () => {
-  for (const command of COMMANDS.filter((name) => !['check', 'status', 'stats', 'index'].includes(name))) {
+  for (const command of COMMANDS.filter((name) => !['check', 'status', 'stats', 'index', 'fix', 'fuzz'].includes(name))) {
     const { io, out } = capture();
     const code = await main([command], io);
     assert.equal(code, 2, command);

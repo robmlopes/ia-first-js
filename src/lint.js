@@ -109,7 +109,7 @@ export function checkLintRules(relFile, parsedData, cfg, index, model, declaredP
           }
         }
       }
-    } else if (!src.startsWith('node:')) {
+    } else if (!src.startsWith('node:') && !src.startsWith('/') && !src.startsWith('\\')) {
       // Third-party import (AIF014)
       const parts = src.split('/');
       const pkgName = src.startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0];
