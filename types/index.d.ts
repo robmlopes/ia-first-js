@@ -1,0 +1,9 @@
+export const name: string;
+export const version: string;
+export * from './contract.js';
+export * from './config.js';
+export * from './history.js';
+export { runStages, testsStage, changedFiles, defaultStages, check } from './pipeline.js';
+export type { Stage, StageContext } from './pipeline.js';
+export { main, COMMANDS } from './cli.js';
+export type { Io } from './cli.js';

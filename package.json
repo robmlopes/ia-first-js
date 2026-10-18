@@ -1,0 +1,42 @@
+{
+  "name": "ia-first-js",
+  "version": "1.0.0",
+  "description": "AI-first framework for JavaScript and TypeScript: contracts, effects and structured feedback for coding agents",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "node --test",
+    "typecheck": "tsc -p typecheck"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "contracts",
+    "lint",
+    "typescript",
+    "javascript",
+    "framework"
+  ],
+  "type": "module",
+  "bin": {
+    "aif": "bin/aif.js"
+  },
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "src",
+    "types",
+    "docs",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "Unlicense"
+}
