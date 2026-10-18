@@ -10,6 +10,11 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ConfigError, loadConfig } from './config.js';
 import { readLast, record, writeLast } from './history.js';
+import { getWarnings, checkFileLimits } from './limits.js';
+import { saveIndex, findSourceFiles } from './indexer.js';
+import { parseSource } from './parser.js';
+import { runLint } from './lint.js';
+import { runEffects } from './effects.js';
 
 /**
  * @typedef {Record<string, any>} StageError
@@ -122,8 +127,49 @@ export function changedFiles(root) {
   return found;
 }
 
+/** @type {Stage} */
+export const indexStage = {
+  name: 'index',
+  run: ({ root, config }) => {
+    saveIndex(root, config);
+    return [];
+  },
+};
+
+/** @type {Stage} */
+export const lintStage = {
+  name: 'lint',
+  run: ({ root, config, only }) => {
+    const errors = runLint(root, config, only);
+    const files = findSourceFiles(root, config);
+    for (const relFile of files) {
+      if (only && !only.has(relFile)) continue;
+      try {
+        const code = readFileSync(join(root, relFile), 'utf8');
+        const parsed = parseSource(relFile, code);
+        const [fileErrors] = checkFileLimits(parsed, code, relFile, config);
+        errors.push(...fileErrors);
+      } catch {
+        // Ignored unreadable files
+      }
+    }
+    return errors;
+  },
+};
+
+/** @type {Stage} */
+export const effectsStage = {
+  name: 'effects',
+  run: ({ root, config }) => runEffects(root, config),
+};
+
 /** @type {Stage[]} */
-export const defaultStages = [{ name: 'tests', run: testsStage }];
+export const defaultStages = [
+  indexStage,
+  lintStage,
+  effectsStage,
+  { name: 'tests', run: testsStage },
+];
 
 /**
  * Run the whole pipeline for the project at `root`.
@@ -141,10 +187,11 @@ export async function check(root, options = {}) {
   }
   const only = options.changed ? changedFiles(root) : null;
   const { errors, timings } = await runStages(options.stages ?? defaultStages, { root, config, only });
+  const warnings = getWarnings(root, config, only);
   const result = {
     ok: errors.length === 0,
     errors,
-    warnings: [],
+    warnings,
     timings: { ...timings, total: seconds(started) },
   };
   if (options.changed) {

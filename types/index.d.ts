@@ -7,3 +7,8 @@ export { runStages, testsStage, changedFiles, defaultStages, check } from './pip
 export type { Stage, StageContext } from './pipeline.js';
 export { main, COMMANDS } from './cli.js';
 export type { Io } from './cli.js';
+export * from './indexer.js';
+export * from './limits.js';
+export * from './model.js';
+export * from './lint.js';
+export * from './effects.js';

@@ -7,16 +7,20 @@
 
 ## Estrutura
 - `.agents/` governança (SOUL, MEMORY, schema.sql, memory.sqlite, roles/)
-- `.loop/` ciclo (SCHEDULE, specs/, tasks/, evals/)
+- `.loop/` ciclo (SCHEDULE, specs/, design/, tasks/, evals/)
 - `src/` código do framework · `test/` testes `*.test.js` (`node:test`)
 
 ## Fluxo
-scope_analyst → architect → planner → builder → tester_judge. O Coordenador (`.agents/SOUL.md`) orquestra, concatenando `<role>.md` + `<role>.custom.md` quando existir. Estado de tasks, decisões e evals vive em `.agents/memory.sqlite`; o `current_run.md` espelha a rodada.
+scope_analyst → architect → [designer se ui:true] → planner → builders (backend -> frontend -> generic) → judges de apoio → tester_judge.
+O Coordenador (`.agents/SOUL.md`) orquestra, concatenando `<role>.md` + `<role>.custom.md` quando existir. Estado de tasks, decisões e evals vive em `.agents/memory.sqlite`.
 
-## Guard-Rails Core
-1. **Blindagem de migração de banco**: nunca assumir banco novo ou `:memory:`. Scripts de init e repositórios inspecionam tabelas/colunas existentes e aplicam migrações idempotentes e retrocompatíveis (`ADD COLUMN IF NOT EXISTS` ou validação reflexiva) sobre bases já em disco.
-2. **Anti-Swallow**: proibido `catch {}` vazio ou captura genérica sem log estruturado. Erros de banco/infra nunca ocultam componentes de UI/CLI/API: exibir alerta ou estado degradado explícito. Dados corrompidos são contados e reportados, não descartados em silêncio.
-3. **Validação pós-build**: o `tester_judge` testa a migração sobre bases legadas com dados reais e confere a integridade de telas/layout para garantir que nenhum recurso sumiu.
-4. **Overlay `*.custom.md`**: regras de projeto ou equipe ficam em arquivos irmãos `*.custom.md` (ex.: `AGENTS.custom.md`, `.agents/roles/builder.custom.md`). O Coordenador concatena core + custom ao invocar um subagente. Atualizações do core nunca modificam nem removem `*.custom.md`.
-5. **Batching anti-ping-pong**: sem roundtrips sequenciais de inspeção. Leituras conhecidas em paralelo no mesmo turno; varreduras amplas (>3 arquivos) em um único comando/script. Resolver o objetivo com o menor número de voltas à LLM.
-6. **Higiene de execução**: comandos longos levam `timeout`; ao esperar processos assíncronos, o helper de teste deve dar `await` antes de limpar recursos; limpar temporários criados durante investigação (sem `rm -rf` em caminhos absolutos amplos, que a política de segurança bloqueia).
+## Guard-Rails Técnicos Globais (Core)
+1. **Blindagem de Migração de Banco**: Nenhuma alteração de schema/DDL pode assumir banco novo ou em memória (`:memory:`). Scripts de inicialização (`init_db`) e repositórios devem inspecionar colunas e tabelas existentes e aplicar migrações retrocompatíveis e idempotentes (`ALTER TABLE ADD COLUMN IF NOT EXISTS` ou validação reflexiva) para bases já em disco.
+2. **Proibição Estrita de Falhas Silenciosas (Anti-Swallow)**: Proibido `try...except Exception: pass`, `catch {}` vazio ou captura genérica sem log estruturado. Erros de banco ou infraestrutura nunca devem ocultar componentes de interface (UI/CLI/API). Na ocorrência de erro, exibir alerta ou estado degradado explícito para o usuário final.
+3. **Validação e Auditoria Pós-Build**: O `tester_judge` deve testar a migração sobre bases legadas com dados reais e checar a integridade de componentes de tela/layout para certificar que nenhum recurso existente sumiu indevidamente.
+4. **Padrão de Customização Overlay (`*.custom.md`)**: Customizações específicas de projetos ou equipes não devem ser escritas nos arquivos core. Regras específicas devem ser colocadas em arquivos irmãos com extensão `.custom.md` (ex: `AGENTS.custom.md`, `.agents/roles/builder.custom.md`). O Coordenador sempre concatena o core correspondente com o `.custom.md` ao invocar um subagente. Atualizações core NUNCA modificam nem removem arquivos `*.custom.md`.
+5. **Execução em Lote e Anti-Ping-Pong (Batching Mandatório)**: Proibido roundtrips sequenciais de inspeção (`read` arquivo por arquivo em turnos isolados). Emita leituras em lote (`parallel tool calls` no mesmo turno) para arquivos conhecidos. Para varredura ampla (>3 arquivos), use um único comando/script de terminal que filtre e entregue apenas as linhas necessárias. Planeje ações para resolver o objetivo com o menor número possível de voltas à LLM.
+6. **Especialização por Role (sem paralelismo)**:
+   - O `planner` marca tarefas com `role: backend|frontend|generic` e `files:`. Ordem: backend -> frontend -> generic, sempre em sequência.
+   - `designer` roda após o `architect` apenas se a spec tiver `ui: true`; gera `.loop/design/<id>.md` com critérios `VIS-XX`.
+   - `judge_backend`/`judge_frontend` apenas reportam; só o `tester_judge` emite o veredito único, após passada de integração.

@@ -1,37 +1,28 @@
-# Eval — Spec 003, Fase 1 (núcleo do `aif`)
+# Eval — Spec 004, Fase 2: Análise Estática (Parser, Index, Limits, Model, Lint, Effects)
 
 **Veredito: PASS**
-**Juiz:** tester_judge · **Rodada:** T1–T6 · **Comando:** `AIF_TSC=<tsc> npm test`
+**Juiz:** tester_judge · **Rodada:** T1–T7 · **Comando de Teste:** `npm test`
 
-## Critério de parada
-`npm test`: **62 testes, 62 passam, 0 falham, 0 pulados** (com compilador TypeScript).
-Sem `tsc` disponível: 60 passam e 2 ficam `SKIP` com motivo explícito (limitação do `npm install` em `/mnt/d`, ver MEMORY.md).
+## 1. Critério de Parada
+- `npm test`: **96 testes executados, 96 testes passando (0 falhas, 0 cancelados, 0 pulados)**.
+- Validação estrita do compilador TypeScript (`test/types.test.js`) contra `types/*.d.ts` passando com 100% de sucesso.
+- Dogfood do framework (`node bin/aif.js check --json`) executado no próprio repositório `ia-first-js`, passando pelos 4 estágios (`index`, `lint`, `effects`, `tests`) com `ok: true`.
 
-## Critérios de aceite da spec 003
-| Critério | Resultado |
-|---|---|
-| Módulos com testes `node:test`, `npm test` verde | PASS |
-| Contrato: pré/pós-condição, `off`, metadados, contraexemplo JSON | PASS (14 testes) |
-| Config: defaults, parcial, chave desconhecida, JSON inválido estruturado | PASS (13 testes) |
-| Pipeline: ordem, parada no 1º estágio com erro, timings, estágio que lança | PASS |
-| CLI: `check --json` ok/falha, exit codes, comandos futuros explícitos | PASS, incl. execução real do `bin/aif.js` |
-| Anti-swallow: nenhum `catch` vazio | PASS (ver abaixo) |
+## 2. Critérios de Aceite da Spec 004
+| Módulo / Regra | Critério | Veredito |
+|---|---|---|
+| **`src/parser.js`** | Parse estático de `.js`, `.mjs`, `.ts` via TS Compiler API sem dependências externas | PASS |
+| **`src/indexer.js`** | Extração de classes, herança, métodos, atributos, funções, contratos e comando `aif index` | PASS |
+| **`src/limits.js` (AIF005)** | Contagem de linhas efetivas de código, limites por camada, sugestão de extração e warnings antecipados (90%) | PASS |
+| **`src/model.js`** | Modelo em memória com resolução de símbolos cruzados entre módulos e grafo de dependências | PASS |
+| **`src/lint.js`** | Regras `AIF001`, `AIF002`, `AIF003`, `AIF004`, `AIF006`, `AIF007`, `AIF012`, `AIF014` com paridade estrita | PASS |
+| **`src/effects.js`** | Regras `AIF008`, `AIF009`, `AIF010`, `AIF011`, `AIF013`, `AIF016` para capabilities e isolamento de camadas | PASS |
+| **`src/pipeline.js`** | Integração ordenada dos estágios (`index` -> `lint` -> `effects` -> `tests`) e interrupção na primeira falha | PASS |
 
-## Auditoria anti-swallow (8 `catch` em src/ e bin/)
-Todos reportam ou relançam: `cli.js` → erro de uso; `config.js` → `ConfigError`; `history.js:45` → `status: corrupt`; `history.js:89` → **conta** em `skipped` e `stats` expõe `skipped_lines`; `pipeline.js:40` → erro estruturado do estágio; `pipeline.js:87` → só ignora `ENOENT` e relança o resto; `pipeline.js:138` → só trata `ConfigError`, relança o resto; `bin/aif.js` → JSON em stderr + exit 2. Nenhum catch silencioso.
+## 3. Auditoria Anti-Swallow e Migrações
+- **Anti-swallow**: Todos os blocos `catch` foram inspecionados. Nenhum erro de negócio ou falha de infraestrutura é engolido. Regra `AIF004` ativamente analisa o código do usuário e rejeita blocos vazios ou bare `catch`.
+- **Migração de Banco**: N/A para o framework nesta fase (não utiliza persistência relacional interna).
 
-## Compatibilidade com o Python (verificação executável)
-Rodei `record`/`stats` reais do Python (`aif.history`) e do JS com as mesmas entradas:
-- Linha de `history.jsonl`: **chaves idênticas** (nenhuma só de um lado).
-- `stats`: chaves idênticas, **exceto** `skipped_lines` (extensão aditiva documentada); valores iguais (a única diferença é tupla vs. lista, que é o mesmo JSON).
-- `check --json`: `ok, errors, warnings, timings`, como no Python. `status` exit 0/3/1 conforme `cli.md`.
-- Prefixos inventados (`CFG/PIP/TST/CLI`): **nenhum** restante.
-
-## Migração de banco / UI
-N/A: o framework não usa banco nem tem interface gráfica nesta fase (`grep` por sqlite/CREATE/ALTER em `src/` e `bin/` vazio). O `memory.sqlite` pertence à governança, não ao produto.
-
-## Ressalvas (não bloqueiam)
-1. Teste de tipos depende de `tsc` externo (SKIP explícito quando ausente).
-2. `--changed` cai em "checou tudo" fora de git; o projeto ainda não é repositório git.
-3. `aif check` roda só o estágio `tests`; os demais estágios chegam nas Fases 2–5.
-4. O dogfood cria `.aif/` na raiz do projeto; incluir em `.gitignore` quando houver git.
+## 4. Conformidade de Protocolo
+- Todas as mensagens de erro emitidas seguem estritamente o formato:
+  `{ "stage": "lint" | "effects", "rule": "AIF...", "file": string, "line": number, "cause": string, "suggestion": string }`

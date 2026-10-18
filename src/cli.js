@@ -5,12 +5,14 @@
 
 import { parseArgs } from 'node:util';
 import { resolve } from 'node:path';
+import { loadConfig } from './config.js';
 import { readLast, stats } from './history.js';
 import { check } from './pipeline.js';
+import { saveIndex } from './indexer.js';
 
 /** Every command of the framework; later phases implement the rest. */
 export const COMMANDS = ['check', 'index', 'patch', 'fix', 'intent', 'agents', 'fuzz', 'init', 'status', 'stats', 'docs', 'upgrade'];
-const IMPLEMENTED = new Set(['check', 'status', 'stats']);
+const IMPLEMENTED = new Set(['check', 'status', 'stats', 'index']);
 
 const HELP = `aif - AI-first framework for JavaScript and TypeScript
 
@@ -85,6 +87,11 @@ export async function main(argv, io) {
   }
   if (command === 'stats') {
     printJson(io, stats(root));
+    return 0;
+  }
+  if (command === 'index') {
+    saveIndex(root, loadConfig(root));
+    io.stdout('index written to .aif/index.json\n');
     return 0;
   }
 

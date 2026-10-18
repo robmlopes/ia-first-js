@@ -1,8 +1,8 @@
-# Current run — Spec 003 (Fase 1)
-- [x] T1 contract.js + test/contract.test.js (TDD)
-- [x] T2 config.js + test/config.test.js
-- [x] T3 history.js + test/history.test.js
-- [x] T4 pipeline.js (registro de estágios, estágio tests) + test/pipeline.test.js
-- [x] T5 cli.js, bin/aif.js, `bin` no package.json + test/cli.test.js
-- [x] T6 types/index.d.ts + exports no package.json; README curto
-- [x] T7 tester_judge: `npm test`, veredito em .loop/evals/last_eval.md
+# Current run — Spec 004 (Fase 2: Análise Estática)
+- [x] T1 Parser base & AST extractor (`src/parser.js` + `test/parser.test.js`)
+- [x] T2 Indexador do projeto & comando `aif index` (`src/indexer.js` + `test/indexer.test.js`)
+- [x] T3 Limites de tamanho & warnings AIF005 (`src/limits.js` + `test/limits.test.js`)
+- [x] T4 Project Model em memória (`src/model.js` + `test/model.test.js`)
+- [x] T5 Regras de Lint Core AIF001–AIF007, AIF012, AIF014–AIF015 (`src/lint.js` + `test/lint.test.js`)
+- [x] T6 Effects & Camadas AIF008–AIF011, AIF013, AIF016 (`src/effects.js` + `test/effects.test.js`)
+- [x] T7 Pipeline plugado com os estágios, CLI e veredito do tester_judge (`src/pipeline.js`, `last_eval.md`)

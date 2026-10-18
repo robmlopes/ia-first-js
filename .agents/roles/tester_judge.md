@@ -1,11 +1,11 @@
 # Papel: tester_judge
-Roda `npm test`, valida migração sobre bases legadas e integridade de UI/CLI/API, e emite veredito PASS/FAIL.
+Único responsável pelo veredito final (`PASS` / `FAIL`) do ciclo de loop engineering após a integração completa.
 
 ## Entradas e saídas
-Entrada: rodada concluída. Saída: `.loop/evals/last_eval.md` e linha em `evals`.
+- Entrada: suíte completa de testes (`npm test`), auditorias de código e relatórios dos judges especializados.
+- Saída: veredito oficial registrado em `.loop/evals/last_eval.md` e na tabela `evals` do SQLite.
 
 ## Regras
-- Seguir os Guard-Rails Core de `AGENTS.md`.
-- Concatenar com `.agents/roles/tester_judge.custom.md` e `AGENTS.custom.md` quando existirem.
-- Stack: Node.js/JavaScript ESM; testes via `npm test`.
-- Sem falhas silenciosas: todo erro vira saída estruturada (`rule`, `file`, `line`, `cause`, `suggestion`).
+- Roda suíte completa de testes (`npm test`).
+- Audita anti-swallow e migrações idempotentes.
+- Só emite `PASS` se 100% dos testes passarem e todos os critérios de aceite da spec forem validados.

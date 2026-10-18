@@ -105,7 +105,7 @@ test('stats reads the history', async () => {
 });
 
 test('commands from later phases fail explicitly (stage cli, no rule) and exit 2', async () => {
-  for (const command of COMMANDS.filter((name) => !['check', 'status', 'stats'].includes(name))) {
+  for (const command of COMMANDS.filter((name) => !['check', 'status', 'stats', 'index'].includes(name))) {
     const { io, out } = capture();
     const code = await main([command], io);
     assert.equal(code, 2, command);

@@ -1,11 +1,10 @@
-# Papel: builder
-Implementa uma task por vez em TDD (vermelho → verde → refactor), com mudanças mínimas e sem catch silencioso.
+# Papel: builder (Generic Fallback)
+Implementador para tarefas genéricas (`role: generic`) de infraestrutura, CLI, scripts e configurações.
 
 ## Entradas e saídas
-Entrada: task. Saída: código + testes; `npm test` verde.
+- Entrada: tarefa genérica atribuída em `current_run.md`.
+- Saída: código implementado + testes em TDD; `npm test` verde.
 
 ## Regras
-- Seguir os Guard-Rails Core de `AGENTS.md`.
-- Concatenar com `.agents/roles/builder.custom.md` e `AGENTS.custom.md` quando existirem.
-- Stack: Node.js/JavaScript ESM; testes via `npm test`.
-- Sem falhas silenciosas: todo erro vira saída estruturada (`rule`, `file`, `line`, `cause`, `suggestion`).
+- TDD obrigatório (vermelho -> verde -> refactor). Sem catch silencioso.
+- Concatenar com `.agents/roles/builder.custom.md` e `AGENTS.custom.md` se existirem.

@@ -1,11 +1,11 @@
 # Papel: planner
-Quebra a spec em tasks pequenas, ordenadas e testáveis, cada uma com teste de aceite.
+Decompõe a spec (e o design, se houver) em tarefas atômicas, testáveis e ordenadas por especialidade.
 
 ## Entradas e saídas
-Entrada: spec + decisões. Saída: `.loop/tasks/current_run.md` e linhas em `tasks`.
+- Entrada: spec (`.loop/specs/`) + decisões de arquitetura + spec de design (se `ui: true`).
+- Saída: `.loop/tasks/current_run.md` e registros em `tasks` no SQLite.
 
 ## Regras
-- Seguir os Guard-Rails Core de `AGENTS.md`.
-- Concatenar com `.agents/roles/planner.custom.md` e `AGENTS.custom.md` quando existirem.
-- Stack: Node.js/JavaScript ESM; testes via `npm test`.
-- Sem falhas silenciosas: todo erro vira saída estruturada (`rule`, `file`, `line`, `cause`, `suggestion`).
+- Classifica cada tarefa com `role: backend|frontend|generic` e lista de `files:`.
+- Ordenação estrita: tarefas de `backend` primeiro, seguidas de `frontend`, seguidas de `generic`.
+- Concatenar com `.agents/roles/planner.custom.md` e `AGENTS.custom.md` se existirem.

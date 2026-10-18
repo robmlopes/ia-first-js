@@ -129,3 +129,49 @@ test('changedFiles returns null outside a git repository', async () => {
     assert.equal(changedFiles(root), null);
   });
 });
+
+test('check pipeline stops at lint stage when lint fails before tests', async () => {
+  const files = {
+    'aif.config.json': JSON.stringify({ sourceDirs: ['domain'], pureDirs: ['domain'] }),
+    'domain/bad.js': 'export function impure() {}', // AIF002: public function in pure module without contract
+    'test/failing.test.js': "import { test } from 'node:test';\ntest('fails', () => { throw new Error('fail'); });\n",
+  };
+
+  await withProject(files, async (root) => {
+    const result = await check(root);
+    assert.equal(result.ok, false);
+    assert.equal(result.errors.length, 2);
+    assert.equal(result.errors[0].stage, 'lint');
+    assert.ok(result.errors.some(e => e.rule === 'AIF002'));
+    assert.ok(result.errors.some(e => e.rule === 'AIF003'));
+    // tests did not run because pipeline stopped at lint!
+    assert.equal(result.errors.some(e => e.stage === 'tests'), false);
+    assert.equal(existsSync(join(root, '.aif', 'index.json')), true);
+  });
+});
+
+test('check pipeline passes cleanly across all stages when code is compliant', async () => {
+  const files = {
+    'aif.config.json': JSON.stringify({ sourceDirs: ['domain'], pureDirs: ['domain'] }),
+    'domain/pure.js': `
+      /**
+       * @param {number} x
+       * @returns {number}
+       */
+      export const compute = contract({
+        effects: [],
+      })(function compute(x) { return x * 2; });
+    `,
+    'test/ok.test.js': "import { test } from 'node:test';\ntest('ok', () => {});\n",
+  };
+
+  await withProject(files, async (root) => {
+    const result = await check(root);
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.errors, []);
+    assert.ok(result.timings.index !== undefined);
+    assert.ok(result.timings.lint !== undefined);
+    assert.ok(result.timings.effects !== undefined);
+    assert.ok(result.timings.tests !== undefined);
+  });
+});
