@@ -39,8 +39,10 @@
     "node": ">=22"
   },
   "license": "Unlicense",
-  "devDependencies": {
-    "@types/node": "^22.20.5",
+  "dependencies": {
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5"
   }
 }

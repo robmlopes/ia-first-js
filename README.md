@@ -1,20 +1,18 @@
 # ia-first-js
 
-AI-first framework for **JavaScript and TypeScript**: contracts, explicit effects and structured feedback, so coding agents get what a purpose-built language would give them. It is the JS port of the Python [AIF](../ai-first/aif-starter) and keeps its machine-readable output identical (see [docs/compatibility.md](docs/compatibility.md)).
+AI-first framework for **JavaScript and TypeScript**: contracts, explicit effects and structured feedback, so coding agents get what a purpose-built language would give them. It is the full Node/TypeScript port of the original Python AIF framework, keeping identical canonical JSON schemas (`snake_case` keys, standard error shapes, and rule codes).
 
-An agent works in a loop: change code, run `aif check --json`, read the structured errors (`stage`, `rule`, `file`, `line`, `cause`, `suggestion`, `counterexample`), fix, repeat.
-
-> Status: **Phase 1** (core). The full roadmap is in `.loop/specs/002-port-inventory.md`.
+An agent works in a loop: change code, run `aif check --json`, read structured errors (`stage`, `rule`, `file`, `line`, `cause`, `suggestion`, `counterexample`), fix, repeat.
 
 ## Requirements
-Node.js 22+. Plain ESM JavaScript with JSDoc types and `.d.ts` files; no build step. Works from JS and TS projects.
+Node.js 22+. Plain ESM JavaScript with JSDoc types and bundled `.d.ts` definitions; zero build step required. Works seamlessly with both pure JS projects and TypeScript projects.
 
 ## Contracts
 
 ```js
 import { contract } from 'ia-first-js';
 
-const transfer = contract({
+export const transfer = contract({
   requires: ({ amount, balance }) => amount > 0 && balance >= amount,
   ensures: (result, { balance, amount }) => result === balance - amount,
   effects: [],
@@ -28,36 +26,50 @@ transfer(10, 30); // throws ContractViolation: kind "precondition", with a count
 - Predicates receive the inputs as an **object**: `requires({ a, b })`, `ensures(result, { a, b })`.
 - A violation throws `ContractViolation` with `kind`, `function` and `counterexample`; its message is `AIF_CONTRACT {json}`.
 - Omitted arguments appear as `undefined`; for destructured parameters pass `params: ['a', 'b']`.
-- `AIF_CONTRACTS=off` disables the checks (production).
+- `AIF_CONTRACTS=off` disables runtime checks in production.
+
+## Pipeline & Verification Order
+
+`aif check` runs the complete 7-stage verification pipeline in strict fail-fast order:
+
+$$\text{index} \longrightarrow \text{style} \longrightarrow \text{lint} \longrightarrow \text{effects} \longrightarrow \text{types} \longrightarrow \text{fuzz} \longrightarrow \text{tests}$$
 
 ## Commands
 
+All 12 canonical commands are fully implemented:
+
 | Command | Purpose |
 |---|---|
-| `aif check [--json] [--changed] [--root DIR]` | run the pipeline (default command). Exit 0 ok, 1 failed |
-| `aif status` | print `.aif/last-check.json`. Exit 0 passed, 3 running, 1 otherwise |
-| `aif stats` | usage statistics from `.aif/history.jsonl` |
-
-`index`, `patch`, `fix`, `intent`, `agents`, `fuzz`, `init`, `docs` and `upgrade` arrive in later phases and fail explicitly with `{"ok": false, "stage": "cli", ...}` and exit 2.
-
-Phase 1 pipeline: the `tests` stage runs `node --test`. Stages run in order and stop at the first one with errors.
+| `aif check [--json] [--changed] [--root DIR]` | Run the 7-stage pipeline (default command). Exit 0 ok, 1 failed |
+| `aif status` | Print last run snapshot (`.aif/last-check.json`) |
+| `aif stats` | Usage statistics and failure aggregation (`.aif/history.jsonl`) |
+| `aif index` | Rebuild AST member index (`.aif/index.json`) |
+| `aif fix` | Auto-format canonical whitespace, blank lines and newlines |
+| `aif patch <file> <symbol> <new-source>` | Replace function/class in-place via AST without rewriting the file |
+| `aif fuzz [--report]` | Contract fuzzing with counterexamples and skipped functions report |
+| `aif intent [list\|create <id>]` | Human intent tracking (`.aif/intents/<id>.md`) & commit trailer checks |
+| `aif agents [--write]` | Render & sync agent files (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/aif.mdc`) |
+| `aif init [jsdoc\|ts]` | Scaffold a new AI-first project ready to pass `aif check` |
+| `aif docs` | Machine audit of documentation consistency (`DOC001`–`DOC004`) |
+| `aif upgrade [--apply]` | Upgrade framework-managed files while keeping custom rules |
 
 ## Configuration
 
-`aif.config.json` at the project root (all keys optional, camelCase):
+`aif.config.json` at the project root:
 
 ```json
-{ "sourceDirs": ["domain", "web"], "entryDirs": ["web"], "maxFunctionLines": 40, "history": true }
+{
+  "sourceDirs": ["domain", "ports", "adapters"],
+  "pureDirs": ["domain"],
+  "adapterDirs": ["adapters"],
+  "portDirs": ["ports"],
+  "testDirs": ["test"],
+  "maxFunctionLines": 50,
+  "history": true
+}
 ```
 
-Invalid files fail with `{"stage": "config", ...}`; unknown keys are ignored.
-
-## Programmatic API
-
-```js
-import { check, loadConfig, runStages } from 'ia-first-js';
-const result = await check(process.cwd()); // { ok, errors, warnings, timings }
-```
+See [docs/configuration.md](docs/configuration.md), [docs/cli.md](docs/cli.md) and [docs/lint-rules.md](docs/lint-rules.md) for full documentation.
 
 Types ship in `types/` and work from TypeScript out of the box.
 
