@@ -1,8 +1,8 @@
-# Current run — Spec 005 (Fase 3: Feedback e Verificação)
-- [x] T1 Estágio de Estilo e comando `aif fix` [role: backend] [files: src/style.js, test/style.test.js]
-- [x] T2 Estágio de Tipos com diagnósticos tsc [role: backend] [files: src/types.js, test/types-stage.test.js]
-- [x] T3 Inferência de Limites de contratos `requires` [role: backend] [files: src/bounds.js, test/bounds.test.js]
-- [x] T4 Cache de Fuzzing SHA-256 [role: backend] [files: src/cache.js, test/cache.test.js]
-- [x] T5 Relatório estático de cobertura de fuzz [role: backend] [files: src/fuzzreport.js, test/fuzzreport.test.js]
-- [x] T6 Motor de Fuzzing de Contratos CON001–CON005 e `aif fuzz` [role: backend] [files: src/fuzz.js, test/fuzz.test.js]
-- [x] T7 Pipeline integrado, CLI completo e veredito do tester_judge [role: generic] [files: src/pipeline.js, src/cli.js, .loop/evals/last_eval.md]
+# Current run — Spec 006 (Fase 4: Governança, Agentes e Ferramentas)
+- [x] T1 Granular code patcher e comando `aif patch` [role: backend] [files: src/patch.js, test/patch.test.js]
+- [x] T2 Sistema de Intenções e comando `aif intent` [role: backend] [files: src/intents.js, test/intents.test.js]
+- [x] T3 Governança de Agentes e comando `aif agents` [role: backend] [files: src/agents.js, test/agents.test.js]
+- [x] T4 Inicializador multi-template e comando `aif init` [role: backend] [files: src/scaffold.js, test/scaffold.test.js]
+- [x] T5 Auditoria de documentação DOC001–DOC004 e comando `aif docs` [role: backend] [files: src/docscheck.js, test/docscheck.test.js]
+- [x] T6 Atualizador de protocolo e comando `aif upgrade` [role: backend] [files: src/upgrade.js, test/upgrade.test.js]
+- [x] T7 CLI completo com os 12 comandos, dogfood e veredito final do tester_judge [role: generic] [files: src/cli.js, .loop/evals/last_eval.md]

@@ -24,6 +24,12 @@ export * from './bounds.js';
 export * from './cache.js';
 export * from './fuzzreport.js';
 export * from './fuzz.js';
+export * from './patch.js';
+export * from './intents.js';
+export * from './agents.js';
+export * from './scaffold.js';
+export * from './docscheck.js';
+export * from './upgrade.js';
 export {
   runStages,
   testsStage,

@@ -120,18 +120,10 @@ test('fuzz runs contract fuzzing and supports --report', async () => {
   });
 });
 
-test('commands from later phases fail explicitly (stage cli, no rule) and exit 2', async () => {
-  for (const command of COMMANDS.filter((name) => !['check', 'status', 'stats', 'index', 'fix', 'fuzz'].includes(name))) {
-    const { io, out } = capture();
-    const code = await main([command], io);
-    assert.equal(code, 2, command);
-    const result = JSON.parse(out.join(''));
-    assert.equal(result.ok, false);
-    assert.equal(result.stage, 'cli');
-    assert.equal('rule' in result, false);
-    assert.match(result.cause, new RegExp(command));
-    assert.ok(result.suggestion);
-  }
+test('all 12 canonical commands are implemented and recognized', async () => {
+  assert.equal(COMMANDS.length, 12);
+  const unimplemented = COMMANDS.filter((name) => !['check', 'status', 'stats', 'index', 'fix', 'fuzz', 'patch', 'intent', 'agents', 'init', 'docs', 'upgrade'].includes(name));
+  assert.deepEqual(unimplemented, []);
 });
 
 test('an unknown command fails with stage cli and exit 2', async () => {
