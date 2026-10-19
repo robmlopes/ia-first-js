@@ -77,6 +77,8 @@ export function fuzzFunction(moduleName, fn, options = {}) {
   const strategies = meta.strategies || {};
   const rng = createRng(options.seed || 42);
 
+  const relations = bounds.__relations__ || [];
+
   let validCount = 0;
   let rejectedCount = 0;
   const maxAttempts = examples * 10;
@@ -85,6 +87,22 @@ export function fuzzFunction(moduleName, fn, options = {}) {
     const inputs = {};
     for (const p of params) {
       inputs[p] = sampleValue(p, bounds[p], strategies[p], rng);
+    }
+
+    // Adjust for relational constraints (e.g. less < greater)
+    for (const rel of relations) {
+      const vLess = inputs[rel.less];
+      const vGreater = inputs[rel.greater];
+      if (typeof vLess === 'number' && typeof vGreater === 'number') {
+        if (rel.strict && vLess >= vGreater) {
+          // Swap or adjust so vLess < vGreater
+          inputs[rel.less] = Math.min(vLess, vGreater);
+          inputs[rel.greater] = Math.max(vLess, vGreater) + (vLess === vGreater ? 1 : 0);
+        } else if (!rel.strict && vLess > vGreater) {
+          inputs[rel.less] = Math.min(vLess, vGreater);
+          inputs[rel.greater] = Math.max(vLess, vGreater);
+        }
+      }
     }
 
     // Check requires

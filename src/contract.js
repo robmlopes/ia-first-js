@@ -99,13 +99,15 @@ function splitTopLevel(text) {
 
 /**
  * Wrap a function with a contract.
+ * Supports both curried syntax `contract(options)(fn)` and direct syntax `contract(options, fn)`.
  * @param {ContractOptions} [options]
- * @returns {<F extends Function>(fn: F) => F}
+ * @param {Function} [targetFn]
+ * @returns {any}
  */
-export function contract(options = {}) {
+export function contract(options = {}, targetFn = undefined) {
   const { requires, ensures, effects = [], strategies = {} } = options;
 
-  return (fn) => {
+  const createWrapper = (fn) => {
     if (typeof fn !== 'function') {
       throw new TypeError(`contract() expects a function, got ${typeof fn}`);
     }
@@ -141,4 +143,10 @@ export function contract(options = {}) {
     wrapper.__aif__ = { effects: [...effects], requires, ensures, strategies: { ...strategies }, params };
     return wrapper;
   };
+
+  if (typeof targetFn === 'function') {
+    return createWrapper(targetFn);
+  }
+
+  return createWrapper;
 }

@@ -68,6 +68,18 @@ test('fuzzFunction passes cleanly on correct contract and implementation', () =>
   assert.deepEqual(errors, []);
 });
 
+test('fuzzFunction fuzzes relational constraints without false positive CON004', () => {
+  const rangeOverlap = contract({
+    requires: ({ start, end }) => typeof start === 'number' && typeof end === 'number' && start < end,
+    ensures: (res) => typeof res === 'boolean',
+  })(function rangeOverlap(start, end) {
+    return end - start > 0;
+  });
+
+  const errors = fuzzFunction('domain.calc', rangeOverlap, { examples: 20 });
+  assert.deepEqual(errors, []);
+});
+
 test('runFuzz executes over project modules with cache', async () => {
   const root = mkdtempSync(join(tmpdir(), 'aif-fuzz-test-'));
   try {

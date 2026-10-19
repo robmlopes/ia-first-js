@@ -106,3 +106,20 @@ test('supports async functions', async () => {
 test('rejects non-function targets with a clear error', () => {
   assert.throws(() => contract({})(42), TypeError);
 });
+
+test('supports direct syntax contract(options, fn)', () => {
+  const multiply = contract(
+    {
+      requires: ({ a, b }) => a > 0 && b > 0,
+      ensures: (res, { a, b }) => res === a * b,
+    },
+    function multiply(a, b) {
+      return a * b;
+    },
+  );
+
+  assert.equal(multiply(3, 4), 12);
+  assert.equal(multiply.name, 'multiply');
+  assert.ok(multiply.__aif__);
+  assert.throws(() => multiply(-1, 4), ContractViolation);
+});

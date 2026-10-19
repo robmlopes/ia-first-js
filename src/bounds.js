@@ -115,8 +115,21 @@ export function inferBounds(requiresFn) {
 
   if (!arrowOrFn) return {};
 
-  const params = new Set(arrowOrFn.parameters.map((p) => p.name.getText(sf)));
+  const params = new Set();
+  for (const p of arrowOrFn.parameters) {
+    if (ts.isIdentifier(p.name)) {
+      params.add(p.name.text);
+    } else if (ts.isObjectBindingPattern(p.name)) {
+      for (const el of p.name.elements) {
+        if (ts.isIdentifier(el.name)) {
+          params.add(el.name.text);
+        }
+      }
+    }
+  }
+
   const bounds = new Map();
+  const relations = [];
 
   const bodyExpr = ts.isBlock(arrowOrFn.body)
     ? null // Only simple expression bodies are statically parsed for bounds
@@ -137,6 +150,13 @@ export function inferBounds(requiresFn) {
         const val = extractConstant(right);
         if (val !== null) {
           applyConstraint(bounds, left.text, op, val);
+        } else if (ts.isIdentifier(right) && params.has(right.text)) {
+          // param <op> param (relational constraint)
+          if (op === ts.SyntaxKind.LessThanToken || op === ts.SyntaxKind.LessThanEqualsToken) {
+            relations.push({ less: left.text, greater: right.text, strict: op === ts.SyntaxKind.LessThanToken });
+          } else if (op === ts.SyntaxKind.GreaterThanToken || op === ts.SyntaxKind.GreaterThanEqualsToken) {
+            relations.push({ less: right.text, greater: left.text, strict: op === ts.SyntaxKind.GreaterThanToken });
+          }
         }
       }
       // const <op> param
@@ -158,6 +178,14 @@ export function inferBounds(requiresFn) {
       }
       result[name] = [low, high];
     }
+  }
+
+  if (relations.length > 0) {
+    Object.defineProperty(result, '__relations__', {
+      value: relations,
+      enumerable: false,
+      configurable: true,
+    });
   }
 
   return result;

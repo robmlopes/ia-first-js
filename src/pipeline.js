@@ -61,6 +61,10 @@ export async function runStages(stages, context) {
 function runNodeTests(root, destination) {
   const env = { ...process.env };
   delete env.NODE_TEST_CONTEXT; // otherwise the child behaves as a subprocess of the outer runner
+  const existingOptions = env.NODE_OPTIONS || '';
+  if (!existingOptions.includes('--no-warnings')) {
+    env.NODE_OPTIONS = `${existingOptions} --no-warnings`.trim();
+  }
   return new Promise((resolve) => {
     const child = spawn(
       process.execPath,

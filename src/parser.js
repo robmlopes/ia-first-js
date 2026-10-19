@@ -62,7 +62,7 @@ function checkContractWrapper(call) {
   let hasContract = false;
   let hasEnsures = false;
 
-  // Pattern: contract({ effects: [...] })(fn)
+  // Pattern 1 (curried): contract({ effects: [...] })(fn)
   if (ts.isCallExpression(outer.expression)) {
     const innerCall = outer.expression;
     const innerName = innerCall.expression.getText();
@@ -80,6 +80,32 @@ function checkContractWrapper(call) {
                 effects = prop.initializer.elements
                   .filter(ts.isStringLiteral)
                   .map((el) => el.text);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  // Pattern 2 (direct): contract({ effects: [...] }, fn)
+  else {
+    const calleeName = outer.expression.getText();
+    if (calleeName === 'contract' || calleeName.endsWith('.contract')) {
+      if (outer.arguments.length >= 2) {
+        hasContract = true;
+        if (ts.isObjectLiteralExpression(outer.arguments[0])) {
+          const obj = outer.arguments[0];
+          for (const prop of obj.properties) {
+            if (ts.isPropertyAssignment(prop)) {
+              const pName = prop.name.getText();
+              if (pName === 'ensures') {
+                hasEnsures = true;
+              } else if (pName === 'effects') {
+                if (ts.isArrayLiteralExpression(prop.initializer)) {
+                  effects = prop.initializer.elements
+                    .filter(ts.isStringLiteral)
+                    .map((el) => el.text);
+                }
               }
             }
           }
@@ -254,10 +280,17 @@ export function parseSource(filePath, code) {
         if (decl.initializer && ts.isCallExpression(decl.initializer)) {
           const wrapper = checkContractWrapper(decl.initializer);
           if (wrapper.hasContract) {
-            const innerArg = decl.initializer.arguments[0];
-            if (innerArg && (ts.isFunctionExpression(innerArg) || ts.isArrowFunction(innerArg))) {
+            let fnNode = null;
+            if (ts.isCallExpression(decl.initializer.expression)) {
+              // Curried: contract({...})(fn) -> innerArg is arguments[0] of outer call
+              fnNode = decl.initializer.arguments[0];
+            } else if (decl.initializer.arguments.length >= 2) {
+              // Direct: contract({...}, fn) -> fnNode is arguments[1]
+              fnNode = decl.initializer.arguments[1];
+            }
+            if (fnNode && (ts.isFunctionExpression(fnNode) || ts.isArrowFunction(fnNode))) {
               const name = decl.name.getText(sourceFile);
-              processFunction(innerArg, name, isExported, node, decl.initializer);
+              processFunction(fnNode, name, isExported, node, decl.initializer);
             }
           }
         }

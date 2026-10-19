@@ -12,6 +12,7 @@ Node.js 22+. Plain ESM JavaScript with JSDoc types and bundled `.d.ts` definitio
 ```js
 import { contract } from 'ia-first-js';
 
+// Curried syntax: contract(options)(fn)
 export const transfer = contract({
   requires: ({ amount, balance }) => amount > 0 && balance >= amount,
   ensures: (result, { balance, amount }) => result === balance - amount,
@@ -19,6 +20,17 @@ export const transfer = contract({
 })(function transfer(balance, amount) {
   return balance - amount;
 });
+
+// Direct syntax: contract(options, fn)
+export const add = contract(
+  {
+    requires: ({ a, b }) => typeof a === 'number' && typeof b === 'number',
+    ensures: (result, { a, b }) => result === a + b,
+  },
+  function add(a, b) {
+    return a + b;
+  },
+);
 
 transfer(10, 30); // throws ContractViolation: kind "precondition", with a counterexample
 ```

@@ -30,3 +30,10 @@ test('inferBounds returns empty object for null, undefined or complex predicates
   assert.deepEqual(inferBounds(undefined), {});
   assert.deepEqual(inferBounds((s) => s.length > 0), {});
 });
+
+test('inferBounds handles destructured parameters and infers relations', () => {
+  const requires = ({ start, end }) => typeof start === 'number' && typeof end === 'number' && start < end;
+  const bounds = inferBounds(requires);
+  assert.ok(bounds.__relations__);
+  assert.deepEqual(bounds.__relations__, [{ less: 'start', greater: 'end', strict: true }]);
+});

@@ -32,3 +32,4 @@ export class ContractViolation extends Error {
 
 export function parseParams(fn: (...args: any[]) => unknown): string[];
 export function contract(options?: ContractOptions): <F extends (...args: any[]) => any>(fn: F) => Contracted<F>;
+export function contract<F extends (...args: any[]) => any>(options: ContractOptions, fn: F): Contracted<F>;
